@@ -1,6 +1,14 @@
 # kahootcheat
 Find answers to kahoots by game id
 
+## 🌐 Web Interface (GitHub Pages)
+
+A browser-based version is available at:
+**https://SystemInfomation.github.io/kahootcheat/**
+
+Enter the Quiz ID on the page and click **Find Answers** — no Python required.
+> Note: The Kahoot API may block direct browser requests (CORS). If the web tool does not work, use the Python script below.
+
 Finding the quiz id
 ----------------------------------------------
 
