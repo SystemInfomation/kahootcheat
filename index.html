@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kahoot Cheat — Find Answers by Game ID</title>
+  <style>
+    /* ── Reset & base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #46178f;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem 4rem;
+    }
+
+    /* ── Header ── */
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    header h1 {
+      font-size: 2.4rem;
+      font-weight: 900;
+      letter-spacing: -1px;
+      text-shadow: 0 2px 8px rgba(0,0,0,.4);
+    }
+    header p {
+      margin-top: .5rem;
+      opacity: .85;
+      font-size: 1.05rem;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: #fff;
+      color: #333;
+      border-radius: 16px;
+      padding: 2rem;
+      width: 100%;
+      max-width: 560px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.35);
+    }
+
+    /* ── Form ── */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: .5rem;
+      margin-bottom: 1.2rem;
+    }
+    label {
+      font-weight: 700;
+      font-size: .95rem;
+    }
+    input[type="text"] {
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      padding: .7rem 1rem;
+      font-size: 1rem;
+      transition: border-color .2s;
+      outline: none;
+    }
+    input[type="text"]:focus { border-color: #46178f; }
+
+    button#search-btn {
+      width: 100%;
+      padding: .85rem;
+      background: #ff3355;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      font-weight: 800;
+      cursor: pointer;
+      letter-spacing: .5px;
+      transition: background .2s, transform .1s;
+    }
+    button#search-btn:hover  { background: #e0002a; }
+    button#search-btn:active { transform: scale(.97); }
+    button#search-btn:disabled { background: #aaa; cursor: not-allowed; }
+
+    /* ── Status messages ── */
+    #status {
+      margin-top: 1rem;
+      font-size: .95rem;
+      min-height: 1.4rem;
+      text-align: center;
+      color: #666;
+    }
+    #status.error { color: #c0392b; font-weight: 700; }
+
+    /* ── Results ── */
+    #results { margin-top: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+
+    .question-block {
+      border: 2px solid #e8e8e8;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .question-header {
+      background: #46178f;
+      color: #fff;
+      padding: .6rem 1rem;
+      font-weight: 700;
+      font-size: .9rem;
+    }
+    .question-text {
+      padding: .7rem 1rem;
+      font-weight: 600;
+      font-size: 1rem;
+      background: #f9f5ff;
+      border-bottom: 1px solid #e8e8e8;
+    }
+    .answers-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+    .answer-tile {
+      padding: .75rem 1rem;
+      font-size: .9rem;
+      font-weight: 600;
+      color: #fff;
+      position: relative;
+      min-height: 56px;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+    .answer-tile.correct::after {
+      content: '✓';
+      margin-left: auto;
+      font-size: 1.1rem;
+      font-weight: 900;
+    }
+    /* Kahoot tile colours */
+    .tile-0 { background: #e21b3c; }
+    .tile-1 { background: #1368ce; }
+    .tile-2 { background: #d89e00; }
+    .tile-3 { background: #26890c; }
+
+    /* Shape icons like Kahoot */
+    .shape { font-size: 1.2rem; flex-shrink: 0; }
+
+    /* ── Footer ── */
+    footer {
+      margin-top: 2.5rem;
+      font-size: .85rem;
+      opacity: .65;
+      text-align: center;
+    }
+    footer a { color: #e8c0ff; }
+
+    /* ── Spinner ── */
+    .spinner {
+      display: inline-block;
+      width: 18px; height: 18px;
+      border: 3px solid rgba(70,23,143,.25);
+      border-top-color: #46178f;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🎮 Kahoot Cheat</h1>
+    <p>Enter a Kahoot Quiz ID to reveal the correct answers</p>
+  </header>
+
+  <div class="card">
+    <div class="form-group">
+      <label for="game-id">Quiz / Game ID</label>
+      <input
+        type="text"
+        id="game-id"
+        placeholder="e.g. a0c57b82-6814-42a9-bdf4-d7a420e3e62d"
+        autocomplete="off"
+        spellcheck="false"
+      />
+    </div>
+    <button id="search-btn" onclick="fetchAnswers()">Find Answers</button>
+    <div id="status"></div>
+    <div id="results"></div>
+  </div>
+
+  <footer>
+    <p>
+      Based on <a href="https://github.com/SystemInfomation/kahootcheat" target="_blank" rel="noopener">kahootcheat</a>
+      &nbsp;|&nbsp; For educational purposes only
+    </p>
+  </footer>
+
+  <script>
+    /* Shape icons matching Kahoot's four colours */
+    const SHAPES = ['▲', '♦', '●', '■'];
+
+    /* Colour order for 2-choice questions mirrors the Python script's reversal */
+    const COLOURS_4 = [0, 1, 2, 3];   // red, blue, yellow, green
+    const COLOURS_2 = [1, 0];          // blue, red  (reversed, same as [:2][::-1])
+
+    const statusEl  = document.getElementById('status');
+    const resultsEl = document.getElementById('results');
+    const btn       = document.getElementById('search-btn');
+    const input     = document.getElementById('game-id');
+
+    /* Allow pressing Enter in the input box */
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') fetchAnswers(); });
+
+    async function fetchAnswers() {
+      const id = input.value.trim();
+      if (!id) {
+        setStatus('Please enter a Quiz ID.', true);
+        return;
+      }
+
+      resultsEl.innerHTML = '';
+      setStatus('<span class="spinner"></span> Fetching quiz data…');
+      btn.disabled = true;
+
+      const url = 'https://play.kahoot.it/rest/kahoots/' + encodeURIComponent(id);
+
+      let data;
+      try {
+        const resp = await fetch(url);
+        if (!resp.ok) {
+          throw new Error(`HTTP ${resp.status} — quiz not found or API unavailable.`);
+        }
+        data = await resp.json();
+      } catch (err) {
+        setStatus(
+          'Could not fetch quiz data. ' +
+          'The Kahoot API may block browser requests (CORS). ' +
+          'Try running <a href="https://github.com/SystemInfomation/kahootcheat/blob/main/kahootcheat.py">kahootcheat.py</a> locally instead.',
+          true
+        );
+        btn.disabled = false;
+        return;
+      }
+
+      const questions = (data.questions || []).filter(q => q.type === 'quiz');
+
+      if (!questions.length) {
+        setStatus('No quiz-type questions found in this game.', true);
+        btn.disabled = false;
+        return;
+      }
+
+      setStatus(`Found ${questions.length} question(s).`);
+      renderResults(questions);
+      btn.disabled = false;
+    }
+
+    function renderResults(questions) {
+      questions.forEach((slide, idx) => {
+        const choices    = slide.choices || [];
+        const colourIdxs = choices.length === 2 ? COLOURS_2 : COLOURS_4;
+
+        const block = document.createElement('div');
+        block.className = 'question-block';
+
+        /* Header */
+        const header = document.createElement('div');
+        header.className = 'question-header';
+        header.textContent = `Question ${idx + 1}`;
+        block.appendChild(header);
+
+        /* Question text */
+        if (slide.question) {
+          const qText = document.createElement('div');
+          qText.className = 'question-text';
+          qText.textContent = slide.question;
+          block.appendChild(qText);
+        }
+
+        /* Answer tiles */
+        const grid = document.createElement('div');
+        grid.className = 'answers-grid';
+
+        choices.forEach((choice, ci) => {
+          const tileColour = colourIdxs[ci] ?? ci % 4;
+          const tile = document.createElement('div');
+          tile.className = `answer-tile tile-${tileColour}${choice.correct ? ' correct' : ''}`;
+
+          const shape = document.createElement('span');
+          shape.className = 'shape';
+          shape.textContent = SHAPES[tileColour];
+
+          const text = document.createElement('span');
+          text.textContent = choice.answer || '(no text)';
+
+          tile.appendChild(shape);
+          tile.appendChild(text);
+          grid.appendChild(tile);
+        });
+
+        block.appendChild(grid);
+        resultsEl.appendChild(block);
+      });
+    }
+
+    function setStatus(html, isError = false) {
+      statusEl.innerHTML = html;
+      statusEl.className = isError ? 'error' : '';
+    }
+  </script>
+
+</body>
+</html>
